@@ -4,3 +4,5 @@ build/
 tmp-*/
 pfft/core.c
 *.tar.gz
+**/*.egg
+**/*.egg-info

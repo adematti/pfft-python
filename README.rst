@@ -8,7 +8,7 @@ performance, see:
 
     https://www-user.tu-chemnitz.de/~potts/workgroup/pippig/software.php.en
 
-This is the python binding of PFFT. 
+This is the python binding of PFFT.
 The API document is at
 
     http://rainwoodman.github.io/pfft-python/index.html
@@ -22,14 +22,14 @@ DOI of pfft-python:
 
 .. image:: https://zenodo.org/badge/26140163.svg
    :target: https://zenodo.org/badge/latestdoi/26140163
-   
+
 PFFT is a FFT library with excellent scaling at large number of processors.
-We have been routinely running 10,000 ** 3 transforms on 81,000 MPI ranks as 
+We have been routinely running 10,000 ** 3 transforms on 81,000 MPI ranks as
 a component of the BlueTides simulation at National Center for Supercomputing
 Applications. This is beyond our knowledge of the limits of FFTW.
 
 This Python binding of course cannot yet operate at such a large scale. Due
-to the limitations of Python packaging and moduling system. 
+to the limitations of Python packaging and moduling system.
 We nevertheless feel it is important to develop a python binding of PFFT to
 allow early exploration of a migration into scripting languages in super computing.
 
@@ -38,17 +38,23 @@ For example, we have build a particle-mesh solver at
 
     http://github.com/rainwoodman/pmesh
 
-For some leverage of the python import problem, see `python-mpi-bcast` at 
+For some leverage of the python import problem, see `python-mpi-bcast` at
 
     http://github.com/rainwoodman/python-mpi-bcast
 
-pfft-python requires mpi4py for installation. 
+pfft-python requires mpi4py for installation.
 
 To install from PyPI:
 
 .. code::
 
-    pip --user pfft-python
+    pip install --user pfft-python
+
+To enable SSE kernels:
+
+.. code::
+
+    OPTIMIZE=--enable-sse2 pip install --user pfft-python
 
 To install from git source
 
@@ -83,7 +89,7 @@ runs and runs fast. 4 objects are involved in a FFT:
 A fairly complex example (testing agreement with numpy.fft) is at tests/roundtrip.py .
 A simpler example is example.py.
 
-The documentation is sparse and in the source code (pfft/core.pyx), 
+The documentation is sparse and in the source code (pfft/core.pyx),
 hopefully the guide here can get you started:
 
 1. create a ProcMesh object for the communication geometry
@@ -92,16 +98,16 @@ hopefully the guide here can get you started:
    in real and fourier space, both
 
 3. allocate LocalBuffer objects for input and output. A LocalBuffer can be
-   reused for inplace transforms. 
+   reused for inplace transforms.
 
 4. create Plan objects for the transforms, with the LocalBuffer objects as
    scratch
 
 5. optionally, free the scratch buffers, and create new LocalBuffer objects.
 
-6. view the LocalBuffer objects via view_input / view_output 
+6. view the LocalBuffer objects via view_input / view_output
 
-7. fill the LocalBuffer objects, making use of 
+7. fill the LocalBuffer objects, making use of
    Partition.local_i_start, local_o_start which marks the offset of the local
    mesh.
    A useful function is numpy.indices. numpy.meshgrid and numpy.ogrid are also useful.
