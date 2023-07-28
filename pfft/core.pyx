@@ -3,12 +3,12 @@
 """
     pfft-python: python binding of PFFT.
 
-    Author: Yu Feng (yfeng1@berkeley.edu), 
+    Author: Yu Feng (yfeng1@berkeley.edu),
           University of California Berkeley (2014)
 
 """
 from mpi4py import MPI
-cimport libmpi as cMPI
+from . cimport libmpi as cMPI
 import numpy
 cimport numpy
 from libc.stdlib cimport free, calloc
@@ -17,7 +17,7 @@ from libc.string cimport memset
 numpy.import_array()
 
 def split_size_2d(s):
-    """ Split `s` into two integers, 
+    """ Split `s` into two integers,
         a and d, such that a * d == s and a <= d
 
         returns:  a, d
@@ -28,7 +28,7 @@ def split_size_2d(s):
         if s % a == 0:
             d = s // a
             break
-        a = a - 1 
+        a = a - 1
     return a, d
 
 ####
@@ -80,49 +80,49 @@ cdef extern from 'pfft.h':
     void pfftf_destroy_plan(pfft_plan plan)
 
     pfft_plan pfft_plan_dft(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfft_plan_dft_r2c(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfft_plan_dft_c2r(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfft_plan_r2r(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfftf_plan_dft(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfftf_plan_dft_r2c(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfftf_plan_dft_c2r(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
     pfft_plan pfftf_plan_r2r(
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 
-    int pfft_create_procmesh(int rnk_n, cMPI.MPI_Comm comm, int *np, 
+    int pfft_create_procmesh(int rnk_n, cMPI.MPI_Comm comm, int *np,
             cMPI.MPI_Comm * ccart)
 
-    int pfftf_create_procmesh(int rnk_n, cMPI.MPI_Comm comm, int *np, 
+    int pfftf_create_procmesh(int rnk_n, cMPI.MPI_Comm comm, int *np,
             cMPI.MPI_Comm * ccart)
 
     numpy.intp_t pfft_local_size_dft(int rnk_n, numpy.intp_t * n, cMPI.MPI_Comm comm, int
@@ -228,8 +228,8 @@ class Flags(int):
         return ' '.join(s)
 
 class Direction(int):
-    """ 
-    PFFT Transformation Directions 
+    """
+    PFFT Transformation Directions
     """
     PFFT_FORWARD = _PFFT_FORWARD
     PFFT_BACKWARD = _PFFT_BACKWARD
@@ -250,7 +250,7 @@ class Direction(int):
 ##
 class Type(int):
     """
-    PFFT Transformation Types 
+    PFFT Transformation Types
     Double precision is prefixed with PFFT
     Single precision is prefixed with PFFTF
     """
@@ -311,7 +311,7 @@ PFFT_LOCAL_SIZE_FUNC[:] = [
         ]
 
 ctypedef pfft_plan (*pfft_plan_func) (
-            int rnk_n, numpy.intp_t *n, void * input, void * output, 
+            int rnk_n, numpy.intp_t *n, void * input, void * output,
             cMPI.MPI_Comm ccart,
             int sign, unsigned pfft_flags)
 cdef pfft_plan_func PFFT_PLAN_FUNC [8]
@@ -379,10 +379,10 @@ cdef class ProcMesh(object):
         MPI communicator the proc mesh is built for.
         Note that it does not have the 2D topology.
 
-    this        : array_like 
-        The rank of current process in the procmesh 
+    this        : array_like
+        The rank of current process in the procmesh
     np          : array_like
-        The shape of the proc mesh. 
+        The shape of the proc mesh.
     ndim        : int
         size of the proc mesh
     rank        : int
@@ -410,7 +410,7 @@ cdef class ProcMesh(object):
         return np
 
     def __init__(self, np, comm=None):
-        """ A mesh of processes 
+        """ A mesh of processes
             np is the number of processes in each direction.
 
             example:
@@ -452,12 +452,12 @@ cdef class ProcMesh(object):
         self.np = numpy.array(np_)
         self.ndim = len(self.np)
 
-        # a buffer used for various purposes 
+        # a buffer used for various purposes
         cdef int[::1] junk = numpy.empty(self.ndim, 'int32')
 
         # now fill `this'
         self.this = numpy.array(np, 'int32')
-        cMPI.MPI_Cart_get(self.ccart, 2, 
+        cMPI.MPI_Cart_get(self.ccart, 2,
                 &junk[0], &junk[0],
                 <int*>self.this.data);
 
@@ -516,7 +516,7 @@ cdef class Partition(object):
                  ]
 
     def __init__(self, type, n, ProcMesh procmesh, flags):
-        """ A data partition object 
+        """ A data partition object
             type is the type of the transform, r2c, c2r, c2c or r2r see Type.
             n is the size of the mesh.
             procmesh is a ProcMesh object
@@ -565,8 +565,8 @@ cdef class Partition(object):
         cdef pfft_local_size_func func = PFFT_LOCAL_SIZE_FUNC[self.type]
 
 
-        rt = func(n_.shape[0], 
-                &n_[0], 
+        rt = func(n_.shape[0],
+                &n_[0],
                 procmesh.ccart,
                 flags,
                 &local_ni[0],
@@ -690,8 +690,8 @@ cdef class Partition(object):
             start_dim[0] = 0
             if d1 < self.procmesh.ndim:
                 tmp = local_n[d]
-                cMPI.MPI_Allgather(&tmp, sizeof(numpy.intp_t), cMPI.MPI_BYTE, 
-                        &start_dim[1], sizeof(numpy.intp_t), cMPI.MPI_BYTE, 
+                cMPI.MPI_Allgather(&tmp, sizeof(numpy.intp_t), cMPI.MPI_BYTE,
+                        &start_dim[1], sizeof(numpy.intp_t), cMPI.MPI_BYTE,
                         self.procmesh.ccol[d1])
             else:
                 # use the full axis, because it is not chopped
@@ -730,7 +730,7 @@ cdef class LocalBuffer:
     cdef int _has_base
 
     def __init__(self, partition, LocalBuffer base=None):
-        """ The local portion of the distributed array used by PFFT 
+        """ The local portion of the distributed array used by PFFT
 
             see the documents of view_input, view_output
         """
@@ -813,8 +813,8 @@ cdef class Plan(object):
     cdef readonly int inplace
     cdef pfft_free_plan_func free_func
 
-    def __init__(self, Partition partition, direction, 
-            LocalBuffer i, LocalBuffer o=None, 
+    def __init__(self, Partition partition, direction,
+            LocalBuffer i, LocalBuffer o=None,
             type=None, flags=None):
         """ initialize a Plan.
             o defaults to i
@@ -895,7 +895,7 @@ cdef class Plan(object):
 
     def execute(self, LocalBuffer i, LocalBuffer o=None):
         """ execute a plan.
-            o and i must match the alignment (unchecked), 
+            o and i must match the alignment (unchecked),
             inplace status of the plan.
         """
         cdef pfft_execute_func func = PFFT_EXECUTE_FUNC[self.type]
@@ -921,7 +921,7 @@ cdef class Plan(object):
     def __dealloc__(self):
         if self.plan:
             self.free_func(self.plan)
- 
+
 pfft_init()
 pfftf_init()
 #print 'init pfft'

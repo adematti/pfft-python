@@ -1,12 +1,12 @@
 import os
 import glob
-from setuptools import setup
+import shutil
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
+from distutils.command.clean import clean
 
 import numpy
 import mpi4py
-from Cython.Build import cythonize
-from Cython.Distutils import Extension
-from distutils.command.build_ext import build_ext
 
 
 package_basedir = os.path.abspath(os.path.dirname(__file__))
@@ -14,30 +14,30 @@ package_basedir = os.path.abspath(os.path.dirname(__file__))
 
 def build_pfft(prefix, compiler, cflags):
     optimize = os.getenv('OPTIMIZE', '')
-    line = ('CFLAGS="%s -fvisibility=hidden" ' % cflags +
-            'MPICC="%s" ' % compiler +
-            'CC="%s" ' % compiler +
-            'sh %s/depends/install_pfft.sh ' % package_basedir +
-             os.path.abspath(prefix) +
-            ' %s' % optimize)
+    command = 'CFLAGS="%s -fvisibility=hidden" ' % cflags \
+              + 'MPICC="%s" ' % compiler \
+              + 'CC="%s" ' % compiler \
+              + 'sh %s/depends/install_pfft.sh ' % package_basedir \
+              + os.path.abspath(prefix) \
+              + ' %s' % optimize
     if os.path.exists(os.path.join(prefix, 'lib', 'libpfft.a')):
         return
 
-    ret = os.system(line)
-    if ret != 0:
+    if os.system(command) != 0:
         raise ValueError("could not build fftw; check MPICC?")
 
 
-class build_ext_subclass(build_ext):
+class custom_build_ext(build_ext):
+
     user_options = build_ext.user_options + [('mpicc', None, 'MPICC')]
 
     def initialize_options(self):
         try:
             compiler = str(mpi4py.get_config()['mpicc'])
-        except:
-            compiler = "mpicc"
+        except KeyError:
+            compiler = 'mpicc'
 
-        self.mpicc = os.environ.get('MPICC', compiler)
+        self.mpicc = os.getenv('MPICC', compiler)
 
         build_ext.initialize_options(self)
 
@@ -64,21 +64,42 @@ class build_ext_subclass(build_ext):
 
         build_ext.build_extensions(self)
 
-try:
-    from distutils.command.build_py import build_py_2to3 as build_py
-except ImportError:
-    from distutils.command.build_py import build_py
+
+class custom_clean(clean):
+
+    def run(self):
+
+        # run the built-in clean
+        super(custom_clean, self).run()
+
+        # remove the CLASS tmp directories
+        for dirpath in glob.glob('tmp*') + glob.glob(os.path.join('depends', 'pfft-*')):
+            if os.path.isdir(dirpath):
+                shutil.rmtree(dirpath)
+            else:
+                os.remove(dirpath)
+        # remove build directory
+        shutil.rmtree('build', ignore_errors=True)
 
 
 def find_version(path):
     import re
     # path shall be a plain ascii text file.
     s = open(path, 'rt').read()
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              s, re.M)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", s, re.M)
     if version_match:
         return version_match.group(1)
     raise RuntimeError("Version not found")
+
+
+def pfft_extension_config():
+    config = {}
+    config['name'] = 'pfft.core'
+    config['sources'] = ['pfft/core.pyx']
+    config['include_dirs'] = [numpy.get_include()]
+    config['libraries'] = ['m']
+    config['cython_directives'] = {'embedsignature': True}
+    return config
 
 
 setup(name="pfft-python", version=find_version("pfft/version.py"),
@@ -86,19 +107,10 @@ setup(name="pfft-python", version=find_version("pfft/version.py"),
       author_email="rainwoodman@gmail.com",
       description="python binding of PFFT, a massively parallel FFT library",
       url="http://github.com/rainwoodman/pfft-python",
-      #package_dir = {'pfft': 'pfft'},
       zip_safe=False,
-      install_requires=['cython', 'numpy', 'mpi4py'],
-      packages= ['pfft', 'pfft.tests'],
-      requires=['numpy'],
-      ext_modules=cythonize([Extension(
-                  "pfft.core",
-                  ["pfft/core.pyx"],
-                  include_dirs=["./", numpy.get_include()],
-                  libraries=['m'],
-                  cython_directives={"embedsignature": True}
-                  )]),
-    license='GPL3',
-    scripts=['scripts/pfft-roundtrip-matrix.py'],
-    cmdclass = {"build_py": build_py, "build_ext": build_ext_subclass}
-)
+      install_requires=['numpy', 'mpi4py', 'cython'],
+      packages=['pfft', 'pfft.tests'],
+      ext_modules=[Extension(**pfft_extension_config())],
+      license='GPL3',
+      scripts=['scripts/pfft-roundtrip-matrix.py'],
+      cmdclass={'build_ext': custom_build_ext, 'clean': custom_clean})
